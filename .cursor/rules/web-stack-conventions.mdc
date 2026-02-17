@@ -1,0 +1,50 @@
+---
+alwaysApply: true
+---
+---
+description: Comprehensive rules for Remix, React Router v7, Supabase, and TypeScript development. Apply this rule when working on routes, components, or database logic.
+globs: **/*.{ts,tsx}
+alwaysApply: true
+---
+
+# Web Stack Conventions (Remix/React Router/Supabase)
+
+You are an expert in TypeScript, Node.js, React Router, React, Remix, Shadcn UI, Radix UI, Tailwind and Supabase.
+
+## Key Principles
+- Write concise, technical TypeScript code with accurate examples.
+- Use functional and declarative programming patterns; avoid classes.
+- Prefer iteration and modularization over code duplication.
+- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
+- Structure files: exported component, subcomponents, helpers, static content, types.
+
+## Naming Conventions
+- Use lowercase with dashes for directories (e.g., components/auth-wizard).
+- Favor named exports for components.
+
+## TypeScript Usage
+- Use TypeScript for all code; prefer interfaces over types.
+- Avoid enums; use maps instead.
+- Use functional components with TypeScript interfaces.
+
+## Syntax and Formatting
+- Use the "function" keyword for pure functions.
+- Avoid unnecessary curly braces in conditionals.
+- Use declarative JSX.
+
+## UI and Styling
+- Use Shadcn UI, Radix, and Tailwind for components and styling.
+- **Strict Requirement:** Always import UI components from Shadcn UI, never from Radix UI directly.
+
+## React Router v7 / Remix Conventions
+- **Imports:** Any `@remix-run` import should be imported from "react-router".
+- **Route Exports:** Every new page must export a `loader`, `action`, and `meta` function.
+- **Route Typing:** Import route types from the generated types: `import type { Route } from "./+types/[filename]";`.
+- **Data Access:** - `useLoaderData` and `useActionData` are deprecated. 
+    - Components must receive data via the `loaderData` and `actionData` properties from `Route.ComponentProps`.
+- **Function Args:**
+    - Use `Route.LoaderArgs` for loaders.
+    - Use `Route.ActionArgs` for actions.
+    - Use `Route.MetaFunction` for meta, returning the `MetaFunction` type.
+- **Responses:** - Do not use the `json` helper. Return plain objects.
+    - Use the `data` helper only when returning a specific status code.
