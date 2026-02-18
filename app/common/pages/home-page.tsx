@@ -1,5 +1,8 @@
-import { type MetaFunction } from "react-router";
+import { Link, type MetaFunction } from "react-router";
+import { IdeaCard } from "~/features/ideas/components/idea-cards";
+import { PostCard } from "~/features/community/components/post-cards";
 import { ProductCard } from "~/features/products/components/product-cards";
+import { Button } from "../components/ui/button";
 
 export const meta: MetaFunction = () => {
   return [
@@ -10,15 +13,22 @@ export const meta: MetaFunction = () => {
 
 export default function HomePage() {
   return (
-    <div className="px-20">
+    <div className="px-20 space-y-40">
       <div className="grid grid-cols-3 gap-4">
         <div>
           <h2 className="text-3xl font-bold">
             Today's Products
           </h2>
-          <p className="text-xl font-light text-foreground">The best products made by our community today.</p>
+          <p className="text-xl font-light text-foreground">
+            The best products made by our community today.
+          </p>
+          <Button variant="link" asChild className="text-lg font-light pl-0">
+            <Link to="/products/leaderboards">
+              Explore all products &rarr;
+            </Link>
+          </Button>
         </div>
-          {Array.from({ length: 10 }).map((_, index) => (
+          {Array.from({ length: 11 }).map((_, index) => (
             <ProductCard
               id={`productId-${index}`}
               name="Product Name"
@@ -28,6 +38,60 @@ export default function HomePage() {
               voteCount={120}
           />))}
       </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <h2 className="text-3xl font-bold">
+            Latest Discussions
+          </h2>
+          <p className="text-xl font-light text-foreground">
+            The latest discussions from our community.
+          </p>
+          <Button variant="link" asChild className="text-lg font-light pl-0">
+            <Link to="/community">
+              Explore all discussions &rarr;
+            </Link>
+          </Button>
+        </div> 
+        {Array.from({ length: 11 }).map((_, index) => (
+          <PostCard
+            postId={`postId-${index}`}
+            title="What is the best productivity tool?"
+            authorName="Justin"
+            category="Productivity"
+            timeAgo="12 hours ago" 
+            avatarFallback={"N"} 
+            avatarSrc={"https://github.com/apple.png"}         
+          />
+          ))}
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <h2 className="text-3xl font-bold">
+            IdeasGPT
+          </h2>
+          <p className="text-xl font-light text-foreground">
+            Find ideas for your next project.
+          </p>
+          <Button variant="link" asChild className="text-lg font-light pl-0">
+            <Link to="/community">
+              Explore all ideas &rarr;
+            </Link>
+          </Button>
+        </div> 
+        {Array.from({ length: 11 }).map((_, index) => (
+          <IdeaCard
+            ideaId={`ideaId-${index}`}
+            title="A startup that creates an AI-powered generated personal trainers, delivering customized fitness recommendations and tracking of progess using a mobile app to track workouts and progress as well as a website to track progress and goals."
+            viewCount={index * 2}
+            timeAgo="12 hours ago"
+            likeCount={index * 10} 
+            claimed={index % 2 === 0}
+          />
+        ))}
+      </div>
+
     </div>
-  );
-}
+    );
+  }
