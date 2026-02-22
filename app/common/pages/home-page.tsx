@@ -5,6 +5,7 @@ import { PostCard } from "~/features/community/components/post-cards";
 import { ProductCard } from "~/features/products/components/product-cards";
 import { TeamCard } from "~/features/teams/components/team-card";
 import { Button } from "../components/ui/button";
+import type { Route } from "./+types/home-page";
 
 export const meta: MetaFunction = () => {
   return [
