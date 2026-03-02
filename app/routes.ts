@@ -2,9 +2,12 @@ import { type RouteConfig, index, route, prefix } from "@react-router/dev/routes
 
 export default [
     index("common/pages/home-page.tsx"),
+    route("join", "features/users/pages/join-page.tsx"),
+    route("sign-in", "features/users/pages/sign-in-page.tsx"),
     route("ideas", "features/ideas/pages/ideas-page.tsx"),
     ...prefix("jobs", [
         index("features/jobs/pages/jobs-page.tsx"),
+        route("submit", "features/jobs/pages/job-submit-page.tsx"),
         route(":jobId", "features/jobs/pages/job-detail-page.tsx"),
     ]),
     ...prefix("products", [

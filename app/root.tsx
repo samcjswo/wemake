@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -46,12 +47,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return(
-    <div className='py-28'>
-      <Navigation isLoggedIn={true} hasNotifications={true} hasMessages={true} />
+  const { pathname } = useLocation();
+  const isStandalonePage = pathname === "/join" || pathname === "/sign-in";
+
+  return (
+    <div className={isStandalonePage ? "" : "py-28"}>
+      {!isStandalonePage && (
+        <Navigation isLoggedIn={true} hasNotifications={true} hasMessages={true} />
+      )}
       <Outlet />
     </div>
-  );  
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
