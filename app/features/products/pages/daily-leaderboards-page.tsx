@@ -13,7 +13,7 @@ const paramsSchema = z.object({
   day: z.coerce.number(),
 });
 
-export function loader({ params }: Route.LoaderArgs) {
+export function loader({ params, request }: Route.LoaderArgs) {
   const { success, data: parsedData } = paramsSchema.safeParse(params);
   if (!success) {
     throw data({
@@ -44,9 +44,29 @@ export function loader({ params }: Route.LoaderArgs) {
       }
     );
   }
+  const url = new URL(request.url);
+  const pageParam = url.searchParams.get("page");
+  const rawPage = pageParam === null ? 1 : Number(pageParam);
+  const page =
+    Number.isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
+
   return {
-    ...parsedData
+    ...parsedData,
+    page,
   };
+}
+
+export function meta(args: Route.MetaFunction) {
+  const params = (args as { params?: { year?: string; month?: string; day?: string } }).params ?? {};
+  const year = Number(params.year);
+  const month = Number(params.month);
+  const day = Number(params.day);
+  const date = DateTime.fromObject({ year, month, day }).setZone("Asia/Seoul");
+  const dateLabel = date.isValid ? date.toLocaleString(DateTime.DATE_MED) : "";
+  return [
+    { title: `The best products of ${dateLabel} | wemake` },
+    { name: "description", content: `Daily product leaderboard for ${dateLabel}` },
+  ];
 }
 
 export default function DailyLeaderboardsPage({loaderData}: Route.ComponentProps) {
@@ -88,6 +108,9 @@ export default function DailyLeaderboardsPage({loaderData}: Route.ComponentProps
         <ProductPagination
           totalPages={10}
         />
+        <p className="text-center text-muted-foreground text-sm">
+          Page {loaderData.page} of 10
+        </p>
     </div>
   );
 }

@@ -81,7 +81,7 @@ export default function HomePage() {
             Find ideas for your next project.
           </p>
           <Button variant="link" asChild className="text-lg font-light pl-0">
-            <Link to="/community">
+            <Link to="/ideas">
               Explore all ideas &rarr;
             </Link>
           </Button>
