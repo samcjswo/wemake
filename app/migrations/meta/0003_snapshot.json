@@ -1,6 +1,6 @@
 {
-  "id": "1d0adebe-d184-4fee-8d66-a6fa5fa757ec",
-  "prevId": "46f7ccc6-bab8-4516-8f97-c38749958424",
+  "id": "4fe099ae-3553-4a5d-bb54-919ca84d7966",
+  "prevId": "1d0adebe-d184-4fee-8d66-a6fa5fa757ec",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -914,6 +914,89 @@
         "rating_check": {
           "name": "rating_check",
           "value": "\"reviews\".\"rating\" between 1 and 5"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.teams": {
+      "name": "teams",
+      "schema": "",
+      "columns": {
+        "team_id": {
+          "name": "team_id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "teams_team_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "product_name": {
+          "name": "product_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "team_size": {
+          "name": "team_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "equity_split": {
+          "name": "equity_split",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "roles": {
+          "name": "roles",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "product_description": {
+          "name": "product_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "team_size_check": {
+          "name": "team_size_check",
+          "value": "\"teams\".\"team_size\" between 1 and 100"
+        },
+        "equity_split_check": {
+          "name": "equity_split_check",
+          "value": "\"teams\".\"equity_split\" between 1 and 100"
         }
       },
       "isRLSEnabled": false

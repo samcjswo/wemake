@@ -40,4 +40,3 @@ export const reviews = pgTable("reviews", {
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
 }, (table) => [check('rating_check', sql`${table.rating} between 1 and 5`)]);
-

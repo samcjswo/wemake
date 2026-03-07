@@ -34,5 +34,5 @@ export const follows = pgTable("follows", {
   follower_id: uuid().references(() => profiles.profile_id, { onDelete: "cascade" }),
   following_id: uuid().references(() => profiles.profile_id, { onDelete: "cascade" }),
   createdAt: timestamp().defaultNow().notNull(),
-  updatedAt: timestamp().defaultNow().notNull()
+  updatedAt: timestamp().defaultNow().notNull(),
 });
