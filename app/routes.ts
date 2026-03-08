@@ -5,10 +5,20 @@ export default [
     route("join", "features/users/pages/join-page.tsx"),
     route("sign-in", "features/users/pages/sign-in-page.tsx"),
     route("ideas", "features/ideas/pages/ideas-page.tsx"),
+    ...prefix("community", [
+        index("features/community/pages/community-page.tsx"),
+        route("new", "features/community/pages/post-new-page.tsx"),
+        route(":postId", "features/community/pages/post-detail-page.tsx"),
+    ]),
     ...prefix("jobs", [
         index("features/jobs/pages/jobs-page.tsx"),
         route("submit", "features/jobs/pages/job-submit-page.tsx"),
         route(":jobId", "features/jobs/pages/job-detail-page.tsx"),
+    ]),
+    ...prefix("teams", [
+        index("features/teams/pages/teams-page.tsx"),
+        route("new", "features/teams/pages/team-new-page.tsx"),
+        route(":teamId", "features/teams/pages/team-detail-page.tsx"),
     ]),
     ...prefix("products", [
         index("features/products/pages/products-page.tsx"),

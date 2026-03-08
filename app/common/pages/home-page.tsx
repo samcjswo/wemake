@@ -64,9 +64,10 @@ export default function HomePage() {
             title="What is the best productivity tool?"
             authorName="Justin"
             category="Productivity"
-            timeAgo="12 hours ago" 
-            avatarFallback={"N"} 
-            avatarSrc={"https://github.com/apple.png"}         
+            timeAgo="12 hours ago"
+            footerVariant="reply"
+            avatarFallback={"N"}
+            avatarSrc={"https://github.com/apple.png"}
           />
           ))}
       </div>

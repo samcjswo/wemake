@@ -77,22 +77,22 @@ const menus = [
             {
                 name: "All Posts",
                 description: "See all posts in our community",
-                to: "/community ",
+                to: "/community",
             },
             {
                 name: "Top Posts",
                 description: "See the top posts in our community",
-                to: "/community?sort=top",
+                to: "/community?sort=popular",
             },
             {
                 name: "New Posts",
                 description: "See the new posts in our community",
-                to: "/community?sort=new",
+                to: "/community?sort=newest",
             },
             {
                 name: "Create a Post",
                 description: "Create a post to our community",
-                to: "/community/create",
+                to: "/community/new",
             }
         ]
     },
@@ -112,7 +112,7 @@ const menus = [
             {
                 name: "Create a Team",
                 description: "Create a team to our community",
-                to: "/teams/create",
+                to: "/teams/new",
             },
         ]
     }

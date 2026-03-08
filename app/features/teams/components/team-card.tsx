@@ -27,10 +27,10 @@ export function TeamCard({
   projectDescription,
 }: TeamCardProps) {
   return (
-    <Link to={`/teams/${teamId}`}>
-      <Card className="bg-transparent hover:bg-card/50 transition-colors">
-        <CardHeader className="flex flex-row items-center">
-          <CardTitle className="text-base leading-loose">
+    <Link to={`/teams/${teamId}`} className="block h-full">
+      <Card className="h-full flex flex-col min-h-[140px] bg-transparent hover:bg-card/50 transition-colors">
+        <CardHeader className="flex-1 min-h-0">
+          <CardTitle className="text-base leading-loose flex flex-wrap items-baseline gap-x-1 gap-y-1">
             <Badge
               variant="secondary"
               className="inline-flex shadow-sm items-center text-base"
@@ -49,10 +49,10 @@ export function TeamCard({
               </span>
             ))}
             <span> to build </span>
-            <span>{projectDescription}</span>
+            <span className="line-clamp-2 wrap-break-word">{projectDescription}</span>
           </CardTitle>
         </CardHeader>
-        <CardFooter className="justify-end">
+        <CardFooter className="justify-end shrink-0">
           <Button variant="link">
             Join Team &rarr;
           </Button>
