@@ -1,3 +1,4 @@
+import { formatDistanceToNow } from "date-fns";
 import { Form, Link, useSearchParams } from "react-router";
 import { PageHero } from "~/common/components/page-hero";
 import { Button } from "~/common/components/ui/button";
@@ -10,11 +11,13 @@ import {
 import { Input } from "~/common/components/ui/input";
 import ProductPagination from "~/common/components/product-pagination";
 import { PostCard } from "~/features/community/components/post-cards";
+import type { Tables } from "database.types";
 import type { Route } from "./+types/community-page";
 import { getPosts, getTopics } from "../queries";
 
+type CommunityPostListItem = Tables<"community_post_list_view">;
+
 const POSTS_PER_PAGE = 5;
-const TOTAL_POSTS = 12; // mock total; replace with real count when getPosts is wired
 
 const COMMUNITY_CATEGORIES = [
   "AI tools",
@@ -51,15 +54,49 @@ function buildSearchParams(
   return q ? `?${q}` : "";
 }
 
+function formatTimeAgo(createdAt: string): string {
+  try {
+    return formatDistanceToNow(new Date(createdAt), { addSuffix: true });
+  } catch {
+    return "";
+  }
+}
+
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const pageParam = url.searchParams.get("page");
   const rawPage = pageParam === null ? 1 : Number(pageParam);
   const page = Number.isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
-  const totalPages = Math.max(1, Math.ceil(TOTAL_POSTS / POSTS_PER_PAGE));
+
+  const [topics, { posts: rawPosts, totalCount }] = await Promise.all([
+    getTopics(),
+    getPosts({ page, limit: POSTS_PER_PAGE }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / POSTS_PER_PAGE));
   const clampedPage = Math.min(page, totalPages);
 
-  const [topics, posts] = await Promise.all([getTopics(), getPosts()]);
+  const postsToMap =
+    clampedPage !== page && totalCount > 0
+      ? (await getPosts({ page: clampedPage, limit: POSTS_PER_PAGE })).posts
+      : rawPosts ?? [];
+
+  const posts = (postsToMap as CommunityPostListItem[]).map((p) => {
+    const authorName =
+      p.author_name ?? p.author_username ?? "Anonymous";
+    const category = p.topic_name ?? "General";
+    return {
+      postId: String(p.post_id),
+      title: p.title,
+      authorName,
+      category,
+      timeAgo: formatTimeAgo(p.createdAt),
+      avatarFallback: authorName.slice(0, 1).toUpperCase(),
+      avatarSrc: p.author_avatar ?? undefined,
+      upvoteCount: p.upvote_count ?? 0,
+    };
+  });
+
   return { page: clampedPage, totalPages, topics, posts };
 }
 
@@ -76,27 +113,13 @@ export function meta(
   ];
 }
 
-const PLACEHOLDER_POSTS = Array.from({ length: TOTAL_POSTS }, (_, i) => ({
-  postId: String(i + 1),
-  title: i === 0 ? "Welcome to the community" : `Community post ${i + 1}`,
-  authorName: "wemake",
-  category: "Announcements",
-  timeAgo: `${i + 1} day${i > 0 ? "s" : ""} ago`,
-  avatarFallback: "W",
-  upvoteCount: (i + 1) * 3,
-}));
-
-
 export default function CommunityPage({ loaderData }: Route.ComponentProps) {
   const [searchParams] = useSearchParams();
-  const { page, totalPages } = loaderData;
+  const { page, totalPages, posts: postsForPage } = loaderData;
   const activeCategory = searchParams.get("category") ?? null;
   const activeSort = (searchParams.get("sort") ?? "newest").toLowerCase();
   const activePeriod = (searchParams.get("period") ?? "all").toLowerCase();
   const searchQuery = searchParams.get("q") ?? "";
-
-  const startIndex = (page - 1) * POSTS_PER_PAGE;
-  const postsForPage = PLACEHOLDER_POSTS.slice(startIndex, startIndex + POSTS_PER_PAGE);
 
   return (
     <div className="space-y-10">
@@ -186,6 +209,7 @@ export default function CommunityPage({ loaderData }: Route.ComponentProps) {
                 footerVariant="upvote"
                 upvoteCount={post.upvoteCount}
                 avatarFallback={post.avatarFallback}
+                avatarSrc={post.avatarSrc}
               />
             ))}
           </div>

@@ -7,22 +7,22 @@ export const getTopics = async () => {
     return data;
 };
 
-export const getPosts = async () => {
-    const { data, error } = await client.from("community_posts").select(`
-        post_id,
-        title,
-        createdAt,
-        topics (
-            name
-        ),
-        profiles (
-            name,
-            username,
-            avatar
-        )
-    `);
+export interface GetPostsOptions {
+    page?: number;
+    limit?: number;
+}
+
+export const getPosts = async (options?: GetPostsOptions) => {
+    const { page = 1, limit = 10 } = options ?? {};
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data, error, count } = await client
+        .from("community_post_list_view")
+        .select(`*`);
+
     if (error) throw new Error(error.message);
-    return data;
+    return { posts: data ?? [], totalCount: count ?? 0 };
 };
 
 export const getPostReplies = async () => {

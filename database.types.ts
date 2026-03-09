@@ -714,7 +714,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      community_post_list_view: {
+        Row: {
+          post_id: number
+          title: string
+          createdAt: string
+          topic_name: string | null
+          author_name: string | null
+          author_username: string | null
+          author_avatar: string | null
+          upvote_count: number
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
