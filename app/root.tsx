@@ -6,12 +6,14 @@ import {
   Scripts,
   ScrollRestoration,
   useLocation,
+  useNavigation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import Navigation from "./common/components/navigation";
 import "./app.css";
 import { Settings } from "luxon";
+import { cn } from "./lib/utils";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -48,10 +50,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const { pathname } = useLocation();
+  const navigation = useNavigation();
+  const isLoading = navigation.state === "loading";
   const isStandalonePage = pathname === "/join" || pathname === "/sign-in";
 
   return (
-    <div className={isStandalonePage ? "" : "py-28"}>
+    <div
+      className={cn(
+        isStandalonePage ? "" : "py-28",
+        {
+          "py-28": !pathname.includes("/auth/"),
+          "opacity-50": isLoading,
+        },
+      )}
+    >
       {!isStandalonePage && (
         <Navigation isLoggedIn={true} hasNotifications={true} hasMessages={true} />
       )}
