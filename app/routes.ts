@@ -4,6 +4,8 @@ export default [
     index("common/pages/home-page.tsx"),
     route("join", "features/users/pages/join-page.tsx"),
     route("sign-in", "features/users/pages/sign-in-page.tsx"),
+    route("auth/logout", "features/users/pages/logout-page.tsx"),
+    route("auth/callback", "features/users/pages/oauth-callback-page.tsx"),
     route("ideas", "features/ideas/pages/ideas-page.tsx"),
     ...prefix("community", [
         index("features/community/pages/community-page.tsx"),

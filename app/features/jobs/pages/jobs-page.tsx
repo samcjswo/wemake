@@ -21,8 +21,27 @@ import {
 } from "~/common/components/ui/select";
 import { JobCard } from "../components/job-card";
 import { cn } from "~/lib/utils";
+import { getJobs } from "../queries";
 
 const JOBS_PER_PAGE = 9;
+
+function derivesSalaryRangeId(salaryRange: string): string {
+  const match = salaryRange.replace(/[^0-9,]/g, "").split(",")[0];
+  const minK = Math.floor(Number(match.replace(/,/g, "")) / 1000);
+  if (minK < 50) return "under-50";
+  if (minK < 100) return "50-100";
+  if (minK < 150) return "100-150";
+  if (minK < 200) return "150-200";
+  return "200-plus";
+}
+
+function formatPostedAt(createdAt: string): string {
+  const diffMs = Date.now() - new Date(createdAt).getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  if (diffHours < 24) return diffHours <= 1 ? "1 hour ago" : `${diffHours} hours ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return diffDays === 1 ? "1 day ago" : `${diffDays} days ago`;
+}
 
 function getPageUrl(
   pathname: string,
@@ -66,127 +85,29 @@ interface JobListing {
   salaryRangeId: string;
 }
 
-const MOCK_JOBS: JobListing[] = [
-  {
-    id: "jobId-0",
-    companyName: "Meta",
-    companyLogoUrl: "https://github.com/facebook.png",
-    postedAt: "2 hours ago",
-    title: "Software Engineer",
-    jobType: "Full-time",
-    positionLocation: "Remote",
-    salaryRange: "$100,000 - $120,000",
-    location: "San Francisco, CA",
-    salaryRangeId: "100-150",
-  },
-  {
-    id: "jobId-1",
-    companyName: "Stripe",
-    companyLogoUrl: "https://github.com/stripe.png",
-    postedAt: "5 hours ago",
-    title: "Frontend Engineer",
-    jobType: "Full-time",
-    positionLocation: "Remote",
-    salaryRange: "$130,000 - $160,000",
-    location: "New York, NY",
-    salaryRangeId: "100-150",
-  },
-  {
-    id: "jobId-2",
-    companyName: "Vercel",
-    companyLogoUrl: "https://github.com/vercel.png",
-    postedAt: "1 day ago",
-    title: "DevOps Engineer",
-    jobType: "Contract",
-    positionLocation: "Remote",
-    salaryRange: "$80,000 - $100,000",
-    location: "Remote",
-    salaryRangeId: "50-100",
-  },
-  {
-    id: "jobId-3",
-    companyName: "Linear",
-    companyLogoUrl: "https://github.com/linear.png",
-    postedAt: "1 day ago",
-    title: "Product Designer",
-    jobType: "Full-time",
-    positionLocation: "Hybrid",
-    salaryRange: "$120,000 - $150,000",
-    location: "San Francisco, CA",
-    salaryRangeId: "100-150",
-  },
-  {
-    id: "jobId-4",
-    companyName: "Notion",
-    companyLogoUrl: "https://github.com/notion.png",
-    postedAt: "2 days ago",
-    title: "Backend Engineer",
-    jobType: "Full-time",
-    positionLocation: "Remote",
-    salaryRange: "$150,000 - $180,000",
-    location: "Remote",
-    salaryRangeId: "150-200",
-  },
-  {
-    id: "jobId-5",
-    companyName: "Figma",
-    companyLogoUrl: "https://github.com/figma.png",
-    postedAt: "3 days ago",
-    title: "Engineering Intern",
-    jobType: "Internship",
-    positionLocation: "On-site",
-    salaryRange: "$45,000 - $55,000",
-    location: "San Francisco, CA",
-    salaryRangeId: "under-50",
-  },
-  {
-    id: "jobId-6",
-    companyName: "OpenAI",
-    companyLogoUrl: "https://github.com/openai.png",
-    postedAt: "3 days ago",
-    title: "ML Engineer",
-    jobType: "Full-time",
-    positionLocation: "Remote",
-    salaryRange: "$200,000 - $250,000",
-    location: "Remote",
-    salaryRangeId: "200-plus",
-  },
-  {
-    id: "jobId-7",
-    companyName: "Vercel",
-    companyLogoUrl: "https://github.com/vercel.png",
-    postedAt: "4 days ago",
-    title: "Part-time React Developer",
-    jobType: "Part-time",
-    positionLocation: "Remote",
-    salaryRange: "$60,000 - $80,000",
-    location: "Remote",
-    salaryRangeId: "50-100",
-  },
-  {
-    id: "jobId-8",
-    companyName: "Resend",
-    companyLogoUrl: "https://github.com/resend.png",
-    postedAt: "5 days ago",
-    title: "Full-stack Engineer",
-    jobType: "Freelance",
-    positionLocation: "Remote",
-    salaryRange: "$90,000 - $110,000",
-    location: "Remote",
-    salaryRangeId: "50-100",
-  },
-];
-
 function parseArrayParam(value: string | null): string[] {
   if (!value) return [];
   return value.split(",").filter(Boolean);
 }
 
-export function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const types = parseArrayParam(url.searchParams.get("type"));
   const salaryRange = url.searchParams.get("salary") ?? "any";
-  return { types, salaryRange };
+  const rawJobs = await getJobs();
+  const jobs: JobListing[] = rawJobs.map((j) => ({
+    id: String(j.id),
+    companyName: j.company_name,
+    companyLogoUrl: j.company_logo_url,
+    postedAt: formatPostedAt(j.created_at),
+    title: j.title,
+    jobType: j.job_type,
+    positionLocation: j.position_location,
+    salaryRange: j.salary_range,
+    location: j.location,
+    salaryRangeId: derivesSalaryRangeId(j.salary_range),
+  }));
+  return { types, salaryRange, jobs };
 }
 
 export function action(_args: Route.ActionArgs) {
@@ -205,6 +126,7 @@ export default function JobsPage({ loaderData }: Route.ComponentProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTypes = loaderData?.types ?? [];
   const initialSalary = loaderData?.salaryRange ?? "any";
+  const allJobs = loaderData?.jobs ?? [];
 
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(
     () => new Set(initialTypes)
@@ -212,7 +134,7 @@ export default function JobsPage({ loaderData }: Route.ComponentProps) {
   const [salaryRange, setSalaryRange] = useState(initialSalary);
 
   const filteredJobs = useMemo(() => {
-    return MOCK_JOBS.filter((job) => {
+    return allJobs.filter((job) => {
       const jobTypeSlug = job.jobType.toLowerCase().replace(/\s+/g, "-");
       const typeMatch =
         selectedTypes.size === 0 ||

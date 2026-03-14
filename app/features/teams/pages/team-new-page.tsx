@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Form, Link } from "react-router";
+import { requireAuth } from "~/lib/auth.server";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { PageHero } from "~/common/components/page-hero";
 import { Button } from "~/common/components/ui/button";
@@ -74,7 +75,8 @@ function getValuesFromFormData(formData: FormData): SubmitValues {
   };
 }
 
-export function loader(_args: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
+  await requireAuth(request);
   return {};
 }
 

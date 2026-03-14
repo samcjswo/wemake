@@ -6,13 +6,16 @@ import { PageHero } from "~/common/components/page-hero";
 import { ProductCard } from "../components/product-cards";
 import { Button } from "~/common/components/ui/button";
 import ProductPagination from "~/common/components/product-pagination";
+import client from "~/supa-client";
 
 const paramsSchema = z.object({
   year: z.coerce.number(),
   week: z.coerce.number().min(1).max(53),
 });
 
-export function loader({ params, request }: Route.LoaderArgs) {
+const PAGE_SIZE = 10;
+
+export async function loader({ params, request }: Route.LoaderArgs) {
   const { success, data: parsedData } = paramsSchema.safeParse(params);
   if (!success) {
     throw data(
@@ -53,9 +56,40 @@ export function loader({ params, request }: Route.LoaderArgs) {
   const rawPage = pageParam === null ? 1 : Number(pageParam);
   const page = Number.isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
 
+  const startDate = weekStart.startOf("week").toISO()!;
+  const endDate = weekStart.plus({ weeks: 1 }).startOf("week").toISO()!;
+
+  const { data: rows, error } = await client
+    .from("products")
+    .select(`id, name, description, stats, product_upvotes(count)`)
+    .gte("createdAt", startDate)
+    .lt("createdAt", endDate);
+
+  if (error) throw error;
+
+  const sorted = (rows ?? [])
+    .map((p) => {
+      const stats = p.stats as { views?: number; reviews?: number } | null;
+      return {
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        viewCount: stats?.views ?? 0,
+        commentCount: stats?.reviews ?? 0,
+        voteCount: Number((p.product_upvotes as { count: number }[])?.[0]?.count ?? 0),
+      };
+    })
+    .sort((a, b) => b.voteCount - a.voteCount);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const products = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return {
     ...parsedData,
-    page,
+    page: safePage,
+    products,
+    totalPages,
   };
 }
 
@@ -124,20 +158,21 @@ export default function WeeklyLeaderboardsPage({
         ) : null}
       </div>
       <div className="space-y-5 w-full max-w-3xl mx-auto">
-        {Array.from({ length: 5 }).map((_, index) => (
+        {loaderData.products.map((product) => (
           <ProductCard
-            id={`productId-${index}`}
-            name="Product Name"
-            description="Product Description"
-            commentCount={12}
-            viewCount={4}
-            voteCount={120}
+            key={product.id}
+            id={product.id}
+            name={product.name}
+            description={product.description}
+            commentCount={product.commentCount}
+            viewCount={product.viewCount}
+            voteCount={product.voteCount}
           />
         ))}
       </div>
-      <ProductPagination totalPages={10} />
+      <ProductPagination totalPages={loaderData.totalPages} />
       <p className="text-center text-muted-foreground text-sm">
-        Page {loaderData.page} of 10
+        Page {loaderData.page} of {loaderData.totalPages}
       </p>
     </div>
   );

@@ -14,6 +14,20 @@ import Navigation from "./common/components/navigation";
 import "./app.css";
 import { Settings } from "luxon";
 import { cn } from "./lib/utils";
+import { makeServerClient } from "./supa-client";
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const { client } = makeServerClient(request);
+  const { data: { user } } = await client.auth.getUser();
+  if (!user) return { isLoggedIn: false, profile: null };
+  const { data: profileData } = await client
+    .from("profiles")
+    .select("name, username, avatar")
+    .filter("profile_id", "eq", user.id)
+    .maybeSingle();
+  const profile = profileData as { name: string; username: string; avatar: string | null } | null;
+  return { isLoggedIn: true, profile };
+}
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -48,11 +62,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
+export default function App({ loaderData }: Route.ComponentProps) {
   const { pathname } = useLocation();
   const navigation = useNavigation();
   const isLoading = navigation.state === "loading";
   const isStandalonePage = pathname === "/join" || pathname === "/sign-in";
+  const { isLoggedIn, profile } = loaderData;
 
   return (
     <div
@@ -65,7 +80,14 @@ export default function App() {
       )}
     >
       {!isStandalonePage && (
-        <Navigation isLoggedIn={true} hasNotifications={true} hasMessages={true} />
+        <Navigation
+          isLoggedIn={isLoggedIn}
+          name={profile?.name ?? ""}
+          username={profile?.username ?? ""}
+          avatar={profile?.avatar ?? null}
+          hasNotifications={false}
+          hasMessages={false}
+        />
       )}
       <Outlet />
     </div>

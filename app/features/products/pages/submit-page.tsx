@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Form } from "react-router";
+import { requireAuth } from "~/lib/auth.server";
 import { ChevronDownIcon } from "lucide-react";
 import { PageHero } from "~/common/components/page-hero";
 import { Button } from "~/common/components/ui/button";
@@ -23,7 +24,8 @@ const CATEGORIES = [
   { slug: "marketing", name: "Marketing" },
 ];
 
-export function loader({}: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
+  await requireAuth(request);
   return { categories: CATEGORIES };
 }
 

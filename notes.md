@@ -235,3 +235,49 @@ A small piece of data the server saves in your browser to remember you.
 ### In Remix
 - **`loader`** = SSR (runs on server)
 - **`clientLoader`** = CSR (runs in browser)
+
+---
+
+## HTTP Methods: GET vs POST
+
+### GET
+- **Purpose**: Retrieve data
+- **Data location**: URL query string (`/search?q=hello`)
+- **Visible**: Yes — parameters are in the URL
+- **Cached**: Yes — browsers and CDNs can cache it
+- **Idempotent**: Yes — calling it multiple times has no side effect
+- **Examples**: loading a page, searching, filtering, pagination
+
+### POST
+- **Purpose**: Send data to create/change something
+- **Data location**: Request body (not visible in URL)
+- **Visible**: No — body is hidden from the URL bar
+- **Cached**: No
+- **Idempotent**: No — submitting twice creates two records
+- **Examples**: sign up, sign in, creating a post, placing an order
+
+### The other methods (REST)
+
+| Method | Purpose | Example |
+|---|---|---|
+| `GET` | Read | `GET /posts/1` |
+| `POST` | Create | `POST /posts` |
+| `PUT` | Replace entirely | `PUT /posts/1` (full update) |
+| `PATCH` | Partial update | `PATCH /posts/1` (change one field) |
+| `DELETE` | Delete | `DELETE /posts/1` |
+
+### Key rule of thumb
+> **GET** = safe, no side effects. You can bookmark it, share the URL, hit refresh.
+>
+> **POST/PUT/PATCH/DELETE** = causes a change. Refreshing re-submits — that's why browsers warn "are you sure you want to resubmit this form?"
+
+HTML forms natively only support `GET` and `POST`. Frameworks like React Router or Rails fake `PUT`/`PATCH`/`DELETE` by sending a hidden `_method` field inside a POST body.
+
+### In React Router v7 (this project)
+
+| HTTP | Maps to | Used for |
+|---|---|---|
+| GET | `loader` | Fetching data to render a page |
+| POST | `action` | Form submissions — sign in, create, update, delete |
+
+Logout uses a **loader** (GET) because it's triggered by a `<Link>` navigation, not a form.

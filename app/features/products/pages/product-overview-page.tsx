@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { data } from "react-router";
 import { StarIcon } from "lucide-react";
+import { getProductById, getProductReviews } from "../queries";
 import type { Route } from "./+types/product-overview-page";
 import { Avatar, AvatarFallback, AvatarImage } from "~/common/components/ui/avatar";
 import { Button } from "~/common/components/ui/button";
@@ -33,12 +34,6 @@ import { cn } from "~/lib/utils";
 
 const REVIEWS_PER_PAGE = 5;
 
-const DEFAULT_LONG_DESCRIPTION =
-  "This is a longer description of the product. It provides more detail about what the product does, who it is for, and what problems it solves. You can include multiple paragraphs here to give visitors a comprehensive understanding before they decide to try it or visit the website.";
-
-const DEFAULT_HOW_IT_WORKS =
-  "1. Sign up or create an account on the product website.\n2. Complete the onboarding flow to set up your workspace or preferences.\n3. Explore the main features from the dashboard—start with the quick tour if available.\n4. Use the product regularly; most features unlock or become clearer as you go.\n5. Check the help center or support if you need assistance.";
-
 interface ProductOverview {
   id: string;
   name: string;
@@ -48,69 +43,7 @@ interface ProductOverview {
   faviconUrl?: string | null;
   websiteUrl?: string | null;
   reviewCount: number;
-  /** Rating from 0 to 5 */
   rating: number;
-}
-
-const MOCK_PRODUCTS: Record<string, ProductOverview> = {
-  "productId-0": {
-    id: "productId-0",
-    name: "Product Name",
-    description: "Product Description",
-    longDescription: DEFAULT_LONG_DESCRIPTION,
-    howItWorks: DEFAULT_HOW_IT_WORKS,
-    faviconUrl: null,
-    websiteUrl: "https://example.com",
-    reviewCount: 24,
-    rating: 4.2,
-  },
-  "productId-1": {
-    id: "productId-1",
-    name: "Product Name",
-    description: "Product Description",
-    longDescription: DEFAULT_LONG_DESCRIPTION,
-    howItWorks: DEFAULT_HOW_IT_WORKS,
-    faviconUrl: null,
-    websiteUrl: "https://example.com",
-    reviewCount: 12,
-    rating: 4.8,
-  },
-  "productId-2": {
-    id: "productId-2",
-    name: "Product Name",
-    description: "Product Description",
-    longDescription: DEFAULT_LONG_DESCRIPTION,
-    howItWorks: DEFAULT_HOW_IT_WORKS,
-    faviconUrl: null,
-    websiteUrl: "https://example.com",
-    reviewCount: 56,
-    rating: 3.5,
-  },
-  "productId-3": {
-    id: "productId-3",
-    name: "Product Name",
-    description: "Product Description",
-    longDescription: DEFAULT_LONG_DESCRIPTION,
-    howItWorks: DEFAULT_HOW_IT_WORKS,
-    faviconUrl: null,
-    websiteUrl: "https://example.com",
-    reviewCount: 8,
-    rating: 5,
-  },
-};
-
-for (let i = 4; i <= 10; i++) {
-  MOCK_PRODUCTS[`productId-${i}`] = {
-    id: `productId-${i}`,
-    name: "Product Name",
-    description: "Product Description",
-    longDescription: DEFAULT_LONG_DESCRIPTION,
-    howItWorks: DEFAULT_HOW_IT_WORKS,
-    faviconUrl: null,
-    websiteUrl: "https://example.com",
-    reviewCount: 10 + i * 3,
-    rating: 3 + (i % 3) * 0.5,
-  };
 }
 
 interface ProductReview {
@@ -118,82 +51,49 @@ interface ProductReview {
   authorName: string;
   authorAvatarUrl?: string | null;
   rating: number;
-  body: string;
   createdAt: string;
 }
 
-const MOCK_REVIEWS: Record<string, ProductReview[]> = {};
-function getReviewsForProduct(productId: string): ProductReview[] {
-  if (!MOCK_REVIEWS[productId]) {
-    MOCK_REVIEWS[productId] = [
-      {
-        id: `${productId}-review-1`,
-        authorName: "Alex",
-        authorAvatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-        rating: 5,
-        body: "Great product. Exactly what I needed and easy to set up.",
-        createdAt: "2024-01-15",
-      },
-      {
-        id: `${productId}-review-2`,
-        authorName: "Jordan",
-        authorAvatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jordan",
-        rating: 4,
-        body: "Solid experience overall. A few small features could be improved.",
-        createdAt: "2024-01-10",
-      },
-      {
-        id: `${productId}-review-3`,
-        authorName: "Sam",
-        authorAvatarUrl: null,
-        rating: 5,
-        body: "Highly recommend. The team was responsive and the product delivers.",
-        createdAt: "2024-01-05",
-      },
-      {
-        id: `${productId}-review-4`,
-        authorName: "Taylor",
-        authorAvatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Taylor",
-        rating: 4,
-        body: "Good value. Would use again.",
-        createdAt: "2024-01-02",
-      },
-      {
-        id: `${productId}-review-5`,
-        authorName: "Casey",
-        authorAvatarUrl: null,
-        rating: 5,
-        body: "Exactly what we needed. Setup was straightforward.",
-        createdAt: "2023-12-28",
-      },
-      {
-        id: `${productId}-review-6`,
-        authorName: "Morgan",
-        authorAvatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Morgan",
-        rating: 3,
-        body: "Decent. Some room for improvement.",
-        createdAt: "2023-12-20",
-      },
-    ];
-  }
-  return MOCK_REVIEWS[productId];
-}
-
-function getProductById(productId: string): ProductOverview | null {
-  return MOCK_PRODUCTS[productId] ?? null;
-}
-
-export function loader({ params }: Route.LoaderArgs) {
+export async function loader({ params }: Route.LoaderArgs) {
   const productId = params.productId;
-  if (!productId) {
+  if (!productId || isNaN(Number(productId))) {
     throw data({ message: "Product not found" }, { status: 404 });
   }
-  const product = getProductById(productId);
-  if (!product) {
+  try {
+    const [raw, rawReviews] = await Promise.all([
+      getProductById(Number(productId)),
+      getProductReviews(Number(productId)),
+    ]);
+    const stats = raw.stats as { reviews?: number; views?: number } | null;
+    const avgRating =
+      rawReviews.length > 0
+        ? rawReviews.reduce((sum, r) => sum + r.rating, 0) / rawReviews.length
+        : 0;
+    const product: ProductOverview = {
+      id: String(raw.id),
+      name: raw.name,
+      description: raw.tagline,
+      longDescription: raw.description,
+      howItWorks: raw.how_it_works,
+      faviconUrl: raw.icon || null,
+      websiteUrl: raw.url || null,
+      reviewCount: stats?.reviews ?? rawReviews.length,
+      rating: Math.round(avgRating * 10) / 10,
+    };
+    const reviews: ProductReview[] = rawReviews.map((r) => {
+      const profile = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+      return {
+        id: String(r.review_id),
+        authorName: (profile as { name?: string } | null)?.name ?? "Anonymous",
+        authorAvatarUrl: (profile as { avatar?: string | null } | null)?.avatar ?? null,
+        rating: r.rating,
+        createdAt: r.createdAt,
+      };
+    });
+    return { product, reviews };
+  } catch {
     throw data({ message: "Product not found" }, { status: 404 });
   }
-  const reviews = getReviewsForProduct(productId);
-  return { product, reviews };
 }
 
 export function action({}: Route.ActionArgs) {
@@ -211,18 +111,12 @@ export function meta(args: Parameters<Route.MetaFunction>[0]) {
   ];
 }
 
-interface LoaderData {
-  product: ProductOverview;
-  reviews: ProductReview[];
-}
-
 type TabId = "overview" | "review";
 type ReviewSortOrder = "newest" | "oldest";
 
 export default function ProductOverviewPage({ loaderData }: Route.ComponentProps) {
-  const data = loaderData as LoaderData | undefined;
-  const product = data?.product;
-  const reviews = data?.reviews ?? [];
+  const product = loaderData?.product as ProductOverview | undefined;
+  const reviews = (loaderData?.reviews ?? []) as ProductReview[];
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [reviewSortOrder, setReviewSortOrder] = useState<ReviewSortOrder>("newest");
   const [reviewPage, setReviewPage] = useState(1);
@@ -512,9 +406,6 @@ export default function ProductOverviewPage({ loaderData }: Route.ComponentProps
                         </span>
                       </div>
                     </div>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {review.body}
-                    </p>
                   </li>
                 ))}
               </ul>

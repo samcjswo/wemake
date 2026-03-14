@@ -1,47 +1,39 @@
-import { Form, useSearchParams } from "react-router";
-import { Fragment } from "react";
+import { Form } from "react-router";
 import { PageHero } from "~/common/components/page-hero";
 import { ProductCard } from "../components/product-cards";
 import { Button } from "~/common/components/ui/button";
 import { Input } from "~/common/components/ui/input";
-
 import type { Route } from "./+types/search-page";
+import client from "~/supa-client";
 
-const DEFAULT_PRODUCTS = [
-  {
-    id: "productId-1",
-    name: "Product Name",
-    description: "Product Description",
-    commentCount: 12,
-    viewCount: 4,
-    voteCount: 120,
-  },
-  {
-    id: "productId-2",
-    name: "Product Name",
-    description: "Product Description",
-    commentCount: 12,
-    viewCount: 4,
-    voteCount: 120,
-  },
-  {
-    id: "productId-3",
-    name: "Product Name",
-    description: "Product Description",
-    commentCount: 12,
-    viewCount: 4,
-    voteCount: 120,
-  },
-];
-
-export function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const q = url.searchParams.get("q") ?? "";
-  return { query: q };
-}
 
-export function action({}: Route.ActionArgs) {
-  return null;
+  let query = client
+    .from("products")
+    .select(`id, name, description, stats, product_upvotes(count)`);
+
+  if (q) {
+    query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%`);
+  }
+
+  const { data, error } = await query.limit(20);
+  if (error) throw error;
+
+  const products = (data ?? []).map((p) => {
+    const stats = p.stats as { views?: number; reviews?: number } | null;
+    return {
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      viewCount: stats?.views ?? 0,
+      commentCount: stats?.reviews ?? 0,
+      voteCount: Number((p.product_upvotes as { count: number }[])?.[0]?.count ?? 0),
+    };
+  });
+
+  return { query: q, products };
 }
 
 export function meta(_args: Parameters<Route.MetaFunction>[0]): ReturnType<Route.MetaFunction> {
@@ -52,8 +44,7 @@ export function meta(_args: Parameters<Route.MetaFunction>[0]): ReturnType<Route
 }
 
 export default function SearchPage({ loaderData }: Route.ComponentProps) {
-  const [searchParams] = useSearchParams();
-  const query = loaderData?.query ?? "";
+  const { query, products } = loaderData;
 
   return (
     <div className="space-y-10">
@@ -77,24 +68,25 @@ export default function SearchPage({ loaderData }: Route.ComponentProps) {
         <Button type="submit">Search</Button>
       </Form>
       <div className="space-y-5 w-full max-w-3xl mx-auto px-4">
-        {query ? (
+        {query && (
           <p className="text-center text-muted-foreground px-4">
             Search results for &quot;{query}&quot;
           </p>
+        )}
+        {products.length === 0 ? (
+          <p className="text-center text-muted-foreground">No products found.</p>
         ) : (
-          <Fragment>
-            {DEFAULT_PRODUCTS.map((product) => (
-              <ProductCard
-                key={product.id}
-                id={product.id}
-                name={product.name}
-                description={product.description}
-                commentCount={product.commentCount}
-                viewCount={product.viewCount}
-                voteCount={product.voteCount}
-              />
-            ))}
-          </Fragment>
+          products.map((product) => (
+            <ProductCard
+              key={product.id}
+              id={product.id}
+              name={product.name}
+              description={product.description}
+              commentCount={product.commentCount}
+              viewCount={product.viewCount}
+              voteCount={product.voteCount}
+            />
+          ))
         )}
       </div>
     </div>

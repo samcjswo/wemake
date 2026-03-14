@@ -3,38 +3,27 @@ import { UsersIcon } from "lucide-react";
 import { Button } from "~/common/components/ui/button";
 import { TeamCard } from "../components/team-card";
 import type { Route } from "./+types/teams-page";
+import { getTeams } from "../queries";
 
-const TEAMS_PER_PAGE = 9;
-const TOTAL_TEAMS = 18;
-
-const MOCK_TEAMS = Array.from({ length: TOTAL_TEAMS }, (_, index) => ({
-  teamId: `teamId-${index}`,
-  leaderUserName: `User ${index + 1}`,
-  leaderAvatarSrc: `https://github.com/user${index + 1}.png`,
-  leaderAvatarFallback: `U${index + 1}`,
-  roles: ["React Developer", "Backend Developer", "Product Manager"].slice(
-    0,
-    1 + (index % 3)
-  ),
-  projectDescription:
-    index % 3 === 0
-      ? "a new social media platform"
-      : index % 3 === 1
-        ? "an AI-powered productivity tool"
-        : "a community-driven marketplace",
-}));
-
-export function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
-  const pageParam = url.searchParams.get("page");
-  const rawPage = pageParam === null ? 1 : Number(pageParam);
-  const totalPages = Math.ceil(TOTAL_TEAMS / TEAMS_PER_PAGE);
-  const page = Number.isNaN(rawPage) || rawPage < 1 ? 1 : Math.min(rawPage, Math.max(1, totalPages));
+  const rawPage = Number(url.searchParams.get("page") ?? "1");
+  const page = Number.isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
 
-  const start = (page - 1) * TEAMS_PER_PAGE;
-  const teams = MOCK_TEAMS.slice(start, start + TEAMS_PER_PAGE);
+  const { teams: rawTeams, total, perPage } = await getTeams(page);
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const clampedPage = Math.min(page, totalPages);
 
-  return { page, totalPages, teams };
+  const teams = rawTeams.map((t) => ({
+    teamId: String(t.team_id),
+    leaderUserName: "Team Lead",
+    leaderAvatarSrc: undefined as string | undefined,
+    leaderAvatarFallback: "TL",
+    roles: t.roles.split(",").map((r: string) => r.trim()).filter(Boolean),
+    projectDescription: t.product_description,
+  }));
+
+  return { page: clampedPage, totalPages, teams };
 }
 
 export function action(_args: Route.ActionArgs) {

@@ -11,6 +11,8 @@ import { Input } from "~/common/components/ui/input";
 import { Label } from "~/common/components/ui/label";
 
 import type { Route } from "./+types/promote-page";
+import { searchProducts } from "../queries";
+import { requireAuth } from "~/lib/auth.server";
 
 const PRICE_PER_DAY = 20;
 const MIN_PROMOTION_DAYS = 3;
@@ -22,28 +24,17 @@ export interface ProductOption {
   description: string;
 }
 
-const MOCK_PRODUCTS: ProductOption[] = [
-  { id: "1", name: "Product One", description: "First product description" },
-  { id: "2", name: "Product Two", description: "Second product description" },
-  { id: "3", name: "Product Three", description: "Third product description" },
-  { id: "4", name: "Design Tool", description: "A design tool for creators" },
-  { id: "5", name: "Marketing Suite", description: "Marketing and analytics" },
-];
-
-function searchProducts(query: string): ProductOption[] {
-  if (!query.trim()) return [];
-  const lower = query.trim().toLowerCase();
-  return MOCK_PRODUCTS.filter(
-    (p) =>
-      p.name.toLowerCase().includes(lower) ||
-      p.description.toLowerCase().includes(lower)
-  );
-}
-
-export function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
+  await requireAuth(request);
   const url = new URL(request.url);
   const q = url.searchParams.get("q") ?? "";
-  return { products: searchProducts(q) };
+  const raw = await searchProducts(q);
+  const products: ProductOption[] = raw.map((p) => ({
+    id: String(p.id),
+    name: p.name,
+    description: p.tagline,
+  }));
+  return { products };
 }
 
 export function action({}: Route.ActionArgs) {

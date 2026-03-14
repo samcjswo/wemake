@@ -6,21 +6,17 @@ import {
   CardTitle,
 } from "~/common/components/ui/card";
 import { PageHero } from "~/common/components/page-hero";
-
 import type { Route } from "./+types/categories-page";
+import client from "~/supa-client";
 
-const CATEGORIES = [
-  { slug: "technology", name: "Technology", description: "Apps and dev tools" },
-  { slug: "design", name: "Design", description: "UI/UX and design tools" },
-  { slug: "marketing", name: "Marketing", description: "Growth and analytics" },
-];
+export async function loader({}: Route.LoaderArgs) {
+  const { data, error } = await client
+    .from("categories")
+    .select("category_id, name, description")
+    .order("name");
 
-export function loader({}: Route.LoaderArgs) {
-  return {};
-}
-
-export function action({}: Route.ActionArgs) {
-  return null;
+  if (error) throw error;
+  return { categories: data ?? [] };
 }
 
 export function meta(_args: Parameters<Route.MetaFunction>[0]): ReturnType<Route.MetaFunction> {
@@ -31,6 +27,8 @@ export function meta(_args: Parameters<Route.MetaFunction>[0]): ReturnType<Route
 }
 
 export default function CategoriesPage({ loaderData }: Route.ComponentProps) {
+  const { categories } = loaderData;
+
   return (
     <div className="space-y-10">
       <PageHero
@@ -38,8 +36,8 @@ export default function CategoriesPage({ loaderData }: Route.ComponentProps) {
         description="Browse products by category"
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto px-4">
-        {CATEGORIES.map((category) => (
-          <Link key={category.slug} to={`/products/categories/${category.slug}`}>
+        {categories.map((category) => (
+          <Link key={category.category_id} to={`/products/categories/${category.category_id}`}>
             <Card className="h-full transition-colors hover:bg-accent/50">
               <CardHeader>
                 <CardTitle className="text-xl">{category.name}</CardTitle>

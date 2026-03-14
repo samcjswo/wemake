@@ -1,5 +1,6 @@
 import { data } from "react-router";
 import { Form, Link } from "react-router";
+import { getTeamById } from "../queries";
 import { Avatar, AvatarFallback, AvatarImage } from "~/common/components/ui/avatar";
 import { Badge } from "~/common/components/ui/badge";
 import { Button } from "~/common/components/ui/button";
@@ -35,30 +36,6 @@ interface TeamDetail {
   equitySplit: number;
 }
 
-const MOCK_TEAMS: TeamDetail[] = Array.from({ length: 18 }, (_, index) => ({
-  teamId: `teamId-${index}`,
-  leaderUserName: `User ${index + 1}`,
-  leaderAvatarSrc: `https://github.com/user${index + 1}.png`,
-  leaderAvatarFallback: `U${index + 1}`,
-  roles: ["React Developer", "Backend Developer", "Product Manager"].slice(
-    0,
-    1 + (index % 3)
-  ),
-  projectDescription:
-    index % 3 === 0
-      ? "a new social media platform"
-      : index % 3 === 1
-        ? "an AI-powered productivity tool"
-        : "a community-driven marketplace",
-  productName: `Project ${index + 1}`,
-  teamSize: 3 + (index % 5),
-  equitySplit: 10 + (index % 20),
-}));
-
-function getTeamById(teamId: string): TeamDetail | null {
-  return MOCK_TEAMS.find((t) => t.teamId === teamId) ?? null;
-}
-
 interface SubmitErrors {
   introduction?: string;
   whyJoin?: string;
@@ -89,16 +66,27 @@ function getValuesFromFormData(formData: FormData): SubmitValues {
   };
 }
 
-export function loader({ params }: Route.LoaderArgs) {
+export async function loader({ params }: Route.LoaderArgs) {
   const teamId = params.teamId;
-  if (!teamId) {
+  if (!teamId || isNaN(Number(teamId))) {
     throw data({ message: "Team not found" }, { status: 404 });
   }
-  const team = getTeamById(teamId);
-  if (!team) {
+  try {
+    const raw = await getTeamById(Number(teamId));
+    const team: TeamDetail = {
+      teamId: String(raw.team_id),
+      leaderUserName: "Team Lead",
+      leaderAvatarFallback: "TL",
+      roles: raw.roles.split(",").map((r: string) => r.trim()).filter(Boolean),
+      projectDescription: raw.product_description,
+      productName: raw.product_name,
+      teamSize: raw.team_size,
+      equitySplit: raw.equity_split,
+    };
+    return { team };
+  } catch {
     throw data({ message: "Team not found" }, { status: 404 });
   }
-  return { team };
 }
 
 export async function action({ request, params }: Route.ActionArgs) {

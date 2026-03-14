@@ -120,10 +120,16 @@ const menus = [
 
 export default function Navigation({
     isLoggedIn,
+    name,
+    username,
+    avatar,
     hasNotifications,
     hasMessages,
 }: {
     isLoggedIn: boolean;
+    name: string;
+    username: string;
+    avatar: string | null;
     hasNotifications: boolean;
     hasMessages: boolean;
 }) {
@@ -193,19 +199,19 @@ export default function Navigation({
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Avatar>
-                        <AvatarImage src="https://github.com/samcjswo.png" />
+                        {avatar && <AvatarImage src={avatar} />}
                         <AvatarFallback>
-                            User
+                            {name.charAt(0).toUpperCase() || "U"}
                         </AvatarFallback>
                     </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
                     <DropdownMenuLabel className="flex flex-col">
                         <span className="font-medium">
-                            John Doe
+                            {name || "User"}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                            @username
+                            @{username}
                         </span>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -242,10 +248,10 @@ export default function Navigation({
             ) : (
                 <div className="flex items-center gap-2">
                 <Button asChild variant="outline">
-                    <Link to="/auth/login">Login</Link>
+                    <Link to="/sign-in">Login</Link>
                 </Button>
                 <Button asChild>
-                    <Link to="/auth/join">Join</Link>
+                    <Link to="/join">Join</Link>
                 </Button>
                 </div>
             )}
