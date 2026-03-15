@@ -78,6 +78,13 @@ export type Database = {
             foreignKeyName: "community_post_replies_post_id_community_posts_post_id_fk"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "community_post_list_view"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "community_post_replies_post_id_community_posts_post_id_fk"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "community_posts"
             referencedColumns: ["post_id"]
           },
@@ -110,6 +117,13 @@ export type Database = {
           updatedAt?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "community_post_upvotes_post_id_community_posts_post_id_fk"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_post_list_view"
+            referencedColumns: ["post_id"]
+          },
           {
             foreignKeyName: "community_post_upvotes_post_id_community_posts_post_id_fk"
             columns: ["post_id"]
@@ -446,6 +460,7 @@ export type Database = {
           notification_id: number
           post_id: number | null
           product_id: number | null
+          seen_at: string | null
           source_id: string | null
           target_id: string | null
           type: string
@@ -455,6 +470,7 @@ export type Database = {
           notification_id?: never
           post_id?: number | null
           product_id?: number | null
+          seen_at?: string | null
           source_id?: string | null
           target_id?: string | null
           type: string
@@ -464,11 +480,19 @@ export type Database = {
           notification_id?: never
           post_id?: number | null
           product_id?: number | null
+          seen_at?: string | null
           source_id?: string | null
           target_id?: string | null
           type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_post_id_community_posts_post_id_fk"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_post_list_view"
+            referencedColumns: ["post_id"]
+          },
           {
             foreignKeyName: "notifications_post_id_community_posts_post_id_fk"
             columns: ["post_id"]
@@ -716,14 +740,14 @@ export type Database = {
     Views: {
       community_post_list_view: {
         Row: {
-          post_id: number
-          title: string
-          createdAt: string
-          topic_name: string | null
+          author_avatar: string | null
           author_name: string | null
           author_username: string | null
-          author_avatar: string | null
-          upvote_count: number
+          createdAt: string | null
+          post_id: number | null
+          title: string | null
+          topic_name: string | null
+          upvote_count: number | null
         }
         Relationships: []
       }

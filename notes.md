@@ -281,3 +281,70 @@ HTML forms natively only support `GET` and `POST`. Frameworks like React Router 
 | POST | `action` | Form submissions — sign in, create, update, delete |
 
 Logout uses a **loader** (GET) because it's triggered by a `<Link>` navigation, not a form.
+
+---
+
+## useFetcher
+
+A React Router hook that lets you call a loader or action **without navigating or changing the URL**.
+
+### How it differs from Link and Form
+
+| | URL changes | Page re-renders |
+|---|---|---|
+| `<Link>` / `navigate()` | Yes | Yes |
+| `<Form>` / `useSubmit()` | No | Yes |
+| `useFetcher` | **No** | **No** |
+
+### When to use fetcher
+- The data change is a **small background update** that doesn't deserve its own URL
+- Examples: search-as-you-type dropdowns, like/upvote buttons, inline edits
+
+### When NOT to use fetcher
+- The result should be **shareable or bookmarkable** → use a regular Form (URL reflects the state)
+- The result should be **in browser history** → use navigation
+
+### Example in this project
+The product search on the promote page uses `useFetcher` — typing in the box silently calls the loader and updates the dropdown without navigating anywhere. If it used a regular Form, every keystroke would change the URL and re-render the whole page.
+
+### Simple rule of thumb
+> Does this action deserve its own URL?
+> - Yes → use `<Link>` or `<Form>`
+> - No → use `useFetcher`
+
+---
+
+## Optimistic UI
+
+Updating the UI **immediately** when the user takes an action, before waiting for the server to respond.
+
+### Without optimistic UI
+1. User clicks upvote
+2. Request sent to server
+3. Wait... (UI unchanged)
+4. Server responds → UI updates
+
+### With optimistic UI
+1. User clicks upvote
+2. **UI updates instantly** (count goes up, button highlights)
+3. Request sent to server in background
+4. Server confirms → nothing changes visually (already correct)
+
+### Why it feels better
+The app feels instant and responsive. Without it, there's a noticeable delay after clicking.
+
+### The risk
+If the server fails, the UI must roll back to the previous state. This is acceptable for most low-stakes interactions like upvotes.
+
+### In React Router (useFetcher)
+```tsx
+const optimisticUpvoted =
+  fetcher.state !== "idle"   // while request is in flight
+    ? !isUpvoted             // flip immediately
+    : isUpvoted;             // settled: use server value
+```
+`fetcher.state !== "idle"` means the request is still in flight — during that window, show the flipped state. Once the server responds and the loader reruns, the real server value takes over.
+
+### Simple rule of thumb
+> Use optimistic UI for **fast, reversible, low-stakes** interactions (likes, upvotes, toggles).
+> Skip it for **destructive or high-stakes** actions (delete, purchase) where you want the user to wait for confirmation.

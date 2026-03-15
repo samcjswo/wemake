@@ -1,5 +1,5 @@
 import { ChevronUpIcon } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useFetcher } from "react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "~/common/components/ui/avatar";
 import { Button } from "~/common/components/ui/button";
 import {
@@ -18,6 +18,8 @@ export type PostCardProps = {
   /** Use "reply" for homepage (Reply button), "upvote" for community page (Upvote + count). */
   footerVariant: "reply" | "upvote";
   upvoteCount?: number;
+  isUpvoted?: boolean;
+  isLoggedIn?: boolean;
   avatarSrc?: string;
   avatarFallback: string;
 };
@@ -30,9 +32,27 @@ export function PostCard({
   timeAgo,
   footerVariant,
   upvoteCount = 0,
+  isUpvoted = false,
+  isLoggedIn = false,
   avatarSrc,
   avatarFallback,
 }: PostCardProps) {
+  const fetcher = useFetcher();
+
+  const optimisticUpvoted =
+    fetcher.state !== "idle"
+      ? fetcher.formData?.get("intent") === "upvote"
+        ? !isUpvoted
+        : isUpvoted
+      : isUpvoted;
+
+  const optimisticCount =
+    fetcher.state !== "idle"
+      ? optimisticUpvoted
+        ? upvoteCount + 1
+        : upvoteCount - 1
+      : upvoteCount;
+
   return (
     <Link to={`/community/${postId}`}>
       <Card className="bg-transparent hover:bg-card/50">
@@ -50,19 +70,42 @@ export function PostCard({
             </div>
           </div>
           {footerVariant === "upvote" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0 gap-1.5 text-muted-foreground hover:text-foreground"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                // TODO: submit upvote
-              }}
-            >
-              <ChevronUpIcon className="size-4" />
-              <span>{upvoteCount}</span>
-            </Button>
+            isLoggedIn ? (
+              <fetcher.Form
+                method="post"
+                action="/community"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input type="hidden" name="intent" value="upvote" />
+                <input type="hidden" name="postId" value={postId} />
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="sm"
+                  className={`shrink-0 gap-1.5 ${
+                    optimisticUpvoted
+                      ? "text-primary font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <ChevronUpIcon className="size-4" />
+                  <span>{optimisticCount}</span>
+                </Button>
+              </fetcher.Form>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 gap-1.5 text-muted-foreground hover:text-foreground"
+                asChild
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Link to="/sign-in">
+                  <ChevronUpIcon className="size-4" />
+                  <span>{upvoteCount}</span>
+                </Link>
+              </Button>
+            )
           )}
         </CardHeader>
         {footerVariant === "reply" && (

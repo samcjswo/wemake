@@ -87,10 +87,10 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
           <PostCard
             key={post.post_id}
             postId={String(post.post_id)}
-            title={post.title}
+            title={post.title ?? ""}
             authorName={post.author_name ?? "Anonymous"}
             category={post.topic_name ?? "General"}
-            timeAgo={formatPostedAt(post.createdAt)}
+            timeAgo={formatPostedAt(post.createdAt ?? "")}
             footerVariant="reply"
             avatarSrc={post.author_avatar ?? undefined}
             avatarFallback={(post.author_name ?? "A").charAt(0).toUpperCase()}

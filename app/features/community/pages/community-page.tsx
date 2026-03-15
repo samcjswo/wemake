@@ -1,5 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
-import { Form, Link, useSearchParams } from "react-router";
+import { Form, Link, redirect, useSearchParams } from "react-router";
+import { makeServerClient } from "~/supa-client";
 import { PageHero } from "~/common/components/page-hero";
 import { Button } from "~/common/components/ui/button";
 import {
@@ -13,7 +14,7 @@ import ProductPagination from "~/common/components/product-pagination";
 import { PostCard } from "~/features/community/components/post-cards";
 import type { Tables } from "database.types";
 import type { Route } from "./+types/community-page";
-import { getPosts, getTopics } from "../queries";
+import { getPosts, getTopics, getUserUpvotedPostIds, togglePostUpvote } from "../queries";
 
 type CommunityPostListItem = Tables<"community_post_list_view">;
 
@@ -68,6 +69,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   const rawPage = pageParam === null ? 1 : Number(pageParam);
   const page = Number.isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
 
+  const { client } = makeServerClient(request);
+  const { data: { user } } = await client.auth.getUser();
+
   const [topics, { posts: rawPosts, totalCount }] = await Promise.all([
     getTopics(),
     getPosts({ page, limit: POSTS_PER_PAGE }),
@@ -81,26 +85,45 @@ export async function loader({ request }: Route.LoaderArgs) {
       ? (await getPosts({ page: clampedPage, limit: POSTS_PER_PAGE })).posts
       : rawPosts ?? [];
 
+  const postIds = (postsToMap as CommunityPostListItem[])
+    .map((p) => p.post_id)
+    .filter((id): id is number => id !== null);
+
+  const upvotedPostIds = user
+    ? await getUserUpvotedPostIds(user.id, postIds, client)
+    : [];
+
   const posts = (postsToMap as CommunityPostListItem[]).map((p) => {
-    const authorName =
-      p.author_name ?? p.author_username ?? "Anonymous";
+    const authorName = p.author_name ?? p.author_username ?? "Anonymous";
     const category = p.topic_name ?? "General";
     return {
       postId: String(p.post_id),
       title: p.title,
       authorName,
       category,
-      timeAgo: formatTimeAgo(p.createdAt),
+      timeAgo: formatTimeAgo(p.createdAt ?? ""),
       avatarFallback: authorName.slice(0, 1).toUpperCase(),
       avatarSrc: p.author_avatar ?? undefined,
       upvoteCount: p.upvote_count ?? 0,
+      isUpvoted: upvotedPostIds.includes(p.post_id as number),
     };
   });
 
-  return { page: clampedPage, totalPages, topics, posts };
+  return { page: clampedPage, totalPages, topics, posts, isLoggedIn: !!user };
 }
 
-export function action(_args: Route.ActionArgs) {
+export async function action({ request }: Route.ActionArgs) {
+  const { client, headers } = makeServerClient(request);
+  const { data: { user } } = await client.auth.getUser();
+
+  if (!user) {
+    return redirect("/sign-in", { headers });
+  }
+
+  const formData = await request.formData();
+  const postId = Number(formData.get("postId"));
+
+  await togglePostUpvote(postId, user.id, client);
   return null;
 }
 
@@ -115,7 +138,7 @@ export function meta(
 
 export default function CommunityPage({ loaderData }: Route.ComponentProps) {
   const [searchParams] = useSearchParams();
-  const { page, totalPages, posts: postsForPage } = loaderData;
+  const { page, totalPages, posts: postsForPage, isLoggedIn } = loaderData;
   const activeCategory = searchParams.get("category") ?? null;
   const activeSort = (searchParams.get("sort") ?? "newest").toLowerCase();
   const activePeriod = (searchParams.get("period") ?? "all").toLowerCase();
@@ -202,7 +225,7 @@ export default function CommunityPage({ loaderData }: Route.ComponentProps) {
               <PostCard
                 key={post.postId}
                 postId={post.postId}
-                title={post.title}
+                title={post.title ?? ""}
                 authorName={post.authorName}
                 category={post.category}
                 timeAgo={post.timeAgo}
@@ -210,6 +233,8 @@ export default function CommunityPage({ loaderData }: Route.ComponentProps) {
                 upvoteCount={post.upvoteCount}
                 avatarFallback={post.avatarFallback}
                 avatarSrc={post.avatarSrc}
+                isUpvoted={post.isUpvoted}
+                isLoggedIn={isLoggedIn}
               />
             ))}
           </div>

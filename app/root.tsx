@@ -15,18 +15,22 @@ import "./app.css";
 import { Settings } from "luxon";
 import { cn } from "./lib/utils";
 import { makeServerClient } from "./supa-client";
+import { getHasUnseenNotifications } from "./features/users/queries";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { client } = makeServerClient(request);
   const { data: { user } } = await client.auth.getUser();
-  if (!user) return { isLoggedIn: false, profile: null };
-  const { data: profileData } = await client
-    .from("profiles")
-    .select("name, username, avatar")
-    .filter("profile_id", "eq", user.id)
-    .maybeSingle();
-  const profile = profileData as { name: string; username: string; avatar: string | null } | null;
-  return { isLoggedIn: true, profile };
+  if (!user) return { isLoggedIn: false, profile: null, hasNotifications: false };
+  const [profileResult, hasNotifications] = await Promise.all([
+    client
+      .from("profiles")
+      .select("name, username, avatar")
+      .filter("profile_id", "eq", user.id)
+      .maybeSingle(),
+    getHasUnseenNotifications(user.id, client),
+  ]);
+  const profile = profileResult.data as { name: string; username: string; avatar: string | null } | null;
+  return { isLoggedIn: true, profile, hasNotifications };
 }
 
 export const links: Route.LinksFunction = () => [
@@ -67,7 +71,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
   const navigation = useNavigation();
   const isLoading = navigation.state === "loading";
   const isStandalonePage = pathname === "/join" || pathname === "/sign-in";
-  const { isLoggedIn, profile } = loaderData;
+  const { isLoggedIn, profile, hasNotifications } = loaderData;
 
   return (
     <div
@@ -85,7 +89,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
           name={profile?.name ?? ""}
           username={profile?.username ?? ""}
           avatar={profile?.avatar ?? null}
-          hasNotifications={false}
+          hasNotifications={hasNotifications}
           hasMessages={false}
         />
       )}
